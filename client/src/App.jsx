@@ -1,91 +1,123 @@
-import React, { useState, useEffect } from 'react';
-import './App.css';
-import Task from './components/Task';
-import TaskList from './components/TaskList';
+import React, { useState, useEffect } from "react";
+import "./App.css";
+import "bootstrap/dist/css/bootstrap.min.css";
+import Task from "./components/Task";
+import TaskList from "./components/TaskList";
+import Form from "react-bootstrap/Form";
+import InputGroup from "react-bootstrap/InputGroup";
+import Button from "react-bootstrap/Button";
 
 function App() {
-  const [todos, setTodos] = useState([]);
-  const [newTodoText, setNewTodoText] = useState('');
-  const backendUrl =  'http://localhost:5050/api/todos'; 
+    const [todos, setTodos] = useState([]);
+    const [newTodoText, setNewTodoText] = useState("");
+    const backendUrl = "http://localhost:5050/api/todos";
 
-  // Fetch todos from backend on component mount
-  useEffect(() => {
-    const fetchTodos = async () => {
-      try {
-        const response = await fetch(backendUrl);
-        const data = await response.json();
-        setTodos(data);
-      } catch (error) {
-        console.error('Error fetching todos:', error);
-      }
+    // Fetch todos from backend on component mount
+    useEffect(() => {
+        const fetchTodos = async () => {
+            try {
+                const response = await fetch(backendUrl);
+                const data = await response.json();
+                setTodos(data);
+            } catch (error) {
+                console.error("Error fetching todos:", error);
+            }
+        };
+
+        fetchTodos();
+    }, []);
+
+    const handleInputChange = (event) => {
+        setNewTodoText(event.target.value);
     };
 
-    fetchTodos();
-  }, []);
+    const handleAddTodo = async () => {
+        if (!newTodoText.trim()) return; // Prevent adding empty todos
 
-  const handleInputChange = (event) => {
-    setNewTodoText(event.target.value);
-  };
+        try {
+            const response = await fetch(backendUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text: newTodoText }),
+            });
 
-  const handleAddTodo = async () => {
-    if (!newTodoText.trim()) return; // Prevent adding empty todos
+            const newTodo = await response.json();
+            setTodos([...todos, newTodo]); // Add new todo to state
+            setNewTodoText("");
+        } catch (error) {
+            console.error("Error adding todo:", error);
+        }
+    };
 
-    try {
-      const response = await fetch(backendUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: newTodoText }),
-      });
+    const handleToggleCompleted = async (id) => {
+        try {
+            const updatedTodo = { ...todos.find((todo) => todo._id === id) };
+            updatedTodo.completed = !updatedTodo.completed;
 
-      const newTodo = await response.json();
-      setTodos([...todos, newTodo]); // Add new todo to state
-      setNewTodoText('');
-    } catch (error) {
-      console.error('Error adding todo:', error);
-    }
-  };
+            const response = await fetch(`${backendUrl}/${id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(updatedTodo),
+            });
 
-  const handleToggleCompleted = async (id) => {
-    try {
-      const updatedTodo = { ...todos.find((todo) => todo._id === id) };
-      updatedTodo.completed = !updatedTodo.completed;
+            if (response.ok) {
+                setTodos(
+                    todos.map((todo) => (todo._id === id ? updatedTodo : todo)),
+                );
+            }
+        } catch (error) {
+            console.error("Error toggling completion:", error);
+        }
+    };
 
-      const response = await fetch(`${backendUrl}/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedTodo),
-      });
+    const handleDeleteTodo = async (id) => {
+        try {
+            const response = await fetch(`${backendUrl}/${id}`, {
+                method: "DELETE",
+            });
 
-      if (response.ok) {
-        setTodos(todos.map((todo) => (todo._id === id ? updatedTodo : todo)));
-      }
-    } catch (error) {
-      console.error('Error toggling completion:', error);
-    }
-  };
+            if (response.ok) {
+                setTodos(todos.filter((todo) => todo._id !== id));
+            }
+        } catch (error) {
+            console.error("Error deleting todo:", error);
+        }
+    };
 
-  const handleDeleteTodo = async (id) => {
-    try {
-      const response = await fetch(`${backendUrl}/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        setTodos(todos.filter((todo) => todo._id !== id));
-      }
-    } catch (error) {
-      console.error('Error deleting todo:', error);
-    }
-  };
-
-  return (
-    <div className="App">
-      <h1>Todo List</h1>
-      <input type="text" value={newTodoText} onChange={handleInputChange} />
-      <button onClick={handleAddTodo}>Add Todo</button>
-      <TaskList todos={todos} onToggleCompleted={handleToggleCompleted} onDeleteTodo={handleDeleteTodo} />
-    </div>
-  );
+    return (
+        <div className="App">
+            <h1>Todo List</h1>
+            {/* <input
+                type="text"
+                value={newTodoText}
+                onChange={handleInputChange}
+            /> */}
+            <InputGroup
+                className="mb-3"
+                style={{
+                    width: "45%",
+                }}
+            >
+                <Form.Control
+                    type="text"
+                    value={newTodoText}
+                    onChange={handleInputChange}
+                    placeholder="Todo Item"
+                    aria-label="Todo Item"
+                    aria-describedby="basic-addon2"
+                />
+                <Button onClick={handleAddTodo} variant="success">
+                    Add Todo
+                </Button>
+            </InputGroup>
+            {/* <button onClick={handleAddTodo}>Add Todo</button> */}
+            <TaskList
+                todos={todos}
+                onToggleCompleted={handleToggleCompleted}
+                onDeleteTodo={handleDeleteTodo}
+            />
+        </div>
+    );
 }
 
 export default App;
