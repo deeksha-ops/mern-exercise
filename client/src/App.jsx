@@ -10,7 +10,7 @@ import Button from "react-bootstrap/Button";
 function App() {
     const [todos, setTodos] = useState([]);
     const [newTodoText, setNewTodoText] = useState("");
-    const backendUrl = "http://localhost:5050/api/todos";
+    const backendUrl = "https://vast-rose-bullfrog-hem.cyclic.app/api/todos";
 
     // Fetch todos from backend on component mount
     useEffect(() => {
